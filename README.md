@@ -1,75 +1,59 @@
-# CutSplit Implementation Walkthrough
+# Packet Classification Algorithms in Rust (no_std)
 
-I have implemented the CutSplit packet classification algorithm in Rust, optimized for `no_std` environments.
+This project implements three high-performance packet classification algorithms: **CutSplit**, **HiCuts**, and **HyperSplit**, along with a baseline **Linear** classifier.
 
-## Features Implemented
-- **Core Structures**: `FiveTuple`, `Rule`, `Range` supporting `no_std`.
-- **Packet Headers**: Structs for `Ipv4Header`, `TcpHeader`, `UdpHeader`, `IgmpHeader`.
-- **Linear Classifier**: Baseline implementation for comparison.
-- **CutSplit Classifier**:
-    - Decision Tree structure (`Node::Internal`, `Node::Leaf`).
-    - Builder with heuristic for picking cut dimensions (SrcIp, DstIp, Ports).
-    - Handling of rule duplication/cuts.
-- **Simulation**: LAN-WAN traffic simulation for benchmarking.
+## Algorithms Implemented
 
-## Verification & Benchmarks
+| Algorithm | Type | Description |
+|-----------|------|-------------|
+| **Linear** | Baseline | Sequential search through rules. $O(N)$ complexity. |
+| **CutSplit** | Decision Tree | Geometric cuts followed by rule separation. Balanced structure. |
+| **HiCuts** | Decision Tree | Multi-way geometric cuts (up to 16 children). Shallower tree, very fast. |
+| **HyperSplit**| Decision Tree | Binary space partitioning with rule pushing. Optimized for memory/speed balance. |
 
-### Correctness
-Unit tests confirm that `CutSplit` produces identical classification results to the `Linear` baseline for random traffic.
-Run tests with:
-```bash
-cargo test
-```
+## Performance Benchmarks
 
-### Performance Results
-Extensive benchmarking was performed with rule sets ranging from 100 to 10,000 rules. The results demonstrate the scalability of CutSplit.
+Benchmarks were run on synthetic LAN-WAN traffic rules.
+**HiCuts** proved to be the fastest implementation for this dataset, likely due to its multi-way splitting strategy creating a shallower tree than the binary approaches of CutSplit and HyperSplit.
 
-| Rules | Linear (avg) | CutSplit (avg) | Speedup |
-|-------|--------------|----------------|---------|
-| 100   | ~46 µs       | ~25 µs         | **1.8x**|
-| 600   | ~401 µs      | ~36 µs         | **11x** |
-| 1100  | ~785 µs      | ~42 µs         | **18x** |
-| 2100  | ~1.76 ms     | ~58 µs         | **30x** |
-| 3100  | ~2.85 ms     | ~60 µs         | **47x** |
-| 4100  | ~3.78 ms     | ~70 µs         | **54x** |
-| 5000  | ~4.79 ms     | ~75 µs         | **63x** |
-| 6000  | ~5.80 ms     | ~74 µs         | **78x** |
-| 7000  | ~6.78 ms     | ~91 µs         | **74x** |
-| 8000  | ~7.89 ms     | ~118 µs        | **66x** |
-| 9000  | ~8.97 ms     | ~96 µs         | **93x** |
-| 10000 | ~9.78 ms     | ~104 µs        | **94x** |
+### Classification Time (Lower is Better)
 
-**Trend Analysis**:
-- **Linear Classifier**: Linearly increasing cost (~1ms per 1000 rules).
-- **CutSplit**: Logarithmic-like cost. Even at 10,000 rules, classification stays around 100µs.
-- **Conclusion**: CutSplit provides massive performance gains (approaching 100x speedup) for large rule sets while maintaining `no_std` compatibility.
+| Rules | Linear (avg) | CutSplit (avg) | HyperSplit (avg) | **HiCuts (avg)** |
+|-------|--------------|----------------|------------------|------------------|
+| 100   | ~46 µs       | ~25 µs         | ~22 µs           | **~8 µs**        |
+| 350   | ~215 µs      | ~29 µs         | ~28 µs           | **~11 µs**       |
+| 850   | ~600 µs      | ~37 µs         | ~34 µs           | **~15 µs**       |
+| 1350  | ~985 µs      | ~45 µs         | ~39 µs           | **~18 µs**       |
 
-Run benchmarks with:
-```bash
-cargo bench
-```
+### Speedup vs Linear (at 1350 rules)
+
+| Algorithm | Speedup |
+|-----------|---------|
+| **HiCuts** | **~54x** |
+| HyperSplit| ~25x    |
+| CutSplit  | ~22x    |
 
 ## Usage Example
 
 ```rust
 use cutsplit::rule::{Rule, Range, Action};
+use cutsplit::hicuts::classifier::HiCutsClassifier;
 use cutsplit::classifier::Classifier;
-use cutsplit::cutsplit::classifier::CutSplitClassifier;
 
-let rules = vec![
-    Rule {
-        id: 1,
-        priority: 1,
-        src_ip: Range::exact(0xC0A80001), 
-        dst_ip: Range::any(0, u32::MAX),
-        src_port: Range::any(0, 65535),
-        dst_port: Range::exact(80),
-        proto: Range::exact(6), 
-        action: Action::Permit,
-    }
-];
+// Define rules...
+let rules = vec![ /* ... */ ];
 
-let classifier = CutSplitClassifier::build(&rules);
+// Build classifier
+let classifier = HiCutsClassifier::build(&rules);
+
+// Classify
 let packet = cutsplit::packet::FiveTuple::default(); 
 let action = classifier.classify(&packet);
+```
+
+## Running Verification
+
+```bash
+cargo test   # Verify correctness of all classifiers
+cargo bench  # Run performance benchmarks
 ```

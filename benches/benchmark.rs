@@ -2,7 +2,9 @@ use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
 use cutsplit::simulation::Simulation;
 use cutsplit::classifier::Classifier;
 use cutsplit::linear::LinearClassifier;
-use cutsplit::cutsplit::classifier::CutSplitClassifier; // Path might need partial adjustment via lib.rs export?
+use cutsplit::cutsplit::classifier::CutSplitClassifier;
+use cutsplit::hicuts::classifier::HiCutsClassifier;
+use cutsplit::hypersplit::classifier::HyperSplitClassifier; // Path might need partial adjustment via lib.rs export?
 // cutsplit::cutsplit::classifier::CutSplitClassifier is ... lib->cutsplit->classifier->CSClassifier.
 // But lib.rs has `pub mod cutsplit`. And `cutsplit/mod.rs` has `pub mod classifier`.
 // So usage is `cutsplit::cutsplit::classifier::CutSplitClassifier`.
@@ -59,6 +61,8 @@ fn benchmark_classification(c: &mut Criterion) {
         // Build Classifiers
         let linear = LinearClassifier::build(&rules);
         let tree = CutSplitClassifier::build(&rules);
+        let hicuts = HiCutsClassifier::build(&rules);
+        let hypersplit = HyperSplitClassifier::build(&rules);
         
         group.bench_with_input(BenchmarkId::new("Linear", n_rules), &packets, |b, pkts| {
             b.iter(|| {
@@ -72,6 +76,22 @@ fn benchmark_classification(c: &mut Criterion) {
             b.iter(|| {
                 for pkt in pkts {
                     tree.classify(pkt);
+                }
+            })
+        });
+
+        group.bench_with_input(BenchmarkId::new("HiCuts", n_rules), &packets, |b, pkts| {
+            b.iter(|| {
+                for pkt in pkts {
+                    hicuts.classify(pkt);
+                }
+            })
+        });
+
+        group.bench_with_input(BenchmarkId::new("HyperSplit", n_rules), &packets, |b, pkts| {
+            b.iter(|| {
+                for pkt in pkts {
+                    hypersplit.classify(pkt);
                 }
             })
         });
