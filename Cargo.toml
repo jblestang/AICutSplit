@@ -1,0 +1,16 @@
+[package]
+name = "cutsplit"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rand = { version = "0.8", default-features = false, features = ["alloc"] } # no_std compatible if we use seedable rng
+rand_pcg = "0.3"
+
+[dev-dependencies]
+criterion = "0.5"
+rand = "0.8" # For dev/bench we can use full rand
+
+[[bench]]
+name = "benchmark"
+harness = false
