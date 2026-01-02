@@ -12,43 +12,12 @@ use cutsplit::hypersplit::classifier::HyperSplitClassifier; // Path might need p
 fn benchmark_classification(c: &mut Criterion) {
     let mut sim = Simulation::new(42); // Deterministic seed
     
-    // Generate rule counts based on user request:
-    // - Step of 100 under 100 rules (Start at 100)
-    // - Step of 250 after 100 upto 5000
-    // - Step of 1000 up to 10000
-    let mut rule_counts = Vec::new();
-    
-    // "step of 100 under 100 rules" -> 100
-    rule_counts.push(100);
-
-    // "step of 250 after 100 upto 5000 rules"
-    let mut current = 100 + 250;
-    while current <= 5000 {
-        rule_counts.push(current);
-        current += 250;
-    }
-    // Ensure 5000 is hitting a boundary if we want a clean cut, 
-    // but 100 + 19*250 = 4850. Next is 5100.
-    // User said "upto 5000". So < 5000 logic is correct. 
-    // We can explicitly add 5000 if we consider it a major milestone,
-    // but sticking to the "step" logic strictly: 4850 is the last one.
-    // Let's add 5000 as a bridge to the next step if strictly needed?
-    // "step of 1000 up to 10000" usually starts from 5000.
-    // Let's reset current to 5000 base for the next phase or continue?
-    // "then by step of 1000".
-    // I will start the next phase at 5000 + 1000 = 6000.
-    // But maybe I should include 5000? 
-    // Let's include 5000 explicitly as it's the "upto" boundary.
-    if *rule_counts.last().unwrap() != 5000 {
-        rule_counts.push(5000);
-    }
-
-    // "upto 10000" with step 1000
-    let mut current = 6000;
-    while current <= 10000 {
-        rule_counts.push(current);
-        current += 1000;
-    }
+    // Benchmark steps requested by user
+    let rule_counts = vec![
+        100, 300, 500, 700, 900, 1000, 
+        3000, 5000, 7000, 9000, 10000, 
+        20000
+    ];
     
     let mut group = c.benchmark_group("Classification");
     // Set a lower sample size/time to accommodate many steps if needed
