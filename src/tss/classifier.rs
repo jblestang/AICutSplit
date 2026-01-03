@@ -9,12 +9,12 @@
 //! James Daly, et al. (IEEE Transactions on Networking 2019)
 //! <https://ieeexplore.ieee.org/document/8038296>
 
-use alloc::vec::Vec;
-use hashbrown::HashMap;
 use crate::classifier::Classifier;
 use crate::packet::FiveTuple;
-use crate::rule::{Rule, Action};
-use crate::tss::utils::{range_to_prefixes_u32, range_to_prefixes_u16, range_to_prefixes_u8};
+use crate::rule::{Action, Rule};
+use crate::tss::utils::{range_to_prefixes_u16, range_to_prefixes_u32, range_to_prefixes_u8};
+use alloc::vec::Vec;
+use hashbrown::HashMap;
 
 /// A Tuple represents the prefix lengths for the 5 fields.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -30,20 +30,20 @@ impl Tuple {
     /// Check if `self` is a subset of `other` (meaning `self` masks fewer or equal bits).
     /// If `self` is a subset, a rule from `other` can be stored in `self`'s table.
     fn is_subset_of(&self, other: &Tuple) -> bool {
-        self.src_ip_len <= other.src_ip_len &&
-        self.dst_ip_len <= other.dst_ip_len &&
-        self.src_port_len <= other.src_port_len &&
-        self.dst_port_len <= other.dst_port_len &&
-        self.proto_len <= other.proto_len
+        self.src_ip_len <= other.src_ip_len
+            && self.dst_ip_len <= other.dst_ip_len
+            && self.src_port_len <= other.src_port_len
+            && self.dst_port_len <= other.dst_port_len
+            && self.proto_len <= other.proto_len
     }
 
     /// Calculate total bit difference between two tuples.
     fn bit_difference(&self, other: &Tuple) -> u32 {
-        (other.src_ip_len - self.src_ip_len) +
-        (other.dst_ip_len - self.dst_ip_len) +
-        (other.src_port_len - self.src_port_len) +
-        (other.dst_port_len - self.dst_port_len) +
-        (other.proto_len - self.proto_len)
+        (other.src_ip_len - self.src_ip_len)
+            + (other.dst_ip_len - self.dst_ip_len)
+            + (other.src_port_len - self.src_port_len)
+            + (other.dst_port_len - self.dst_port_len)
+            + (other.proto_len - self.proto_len)
     }
 }
 
@@ -67,10 +67,17 @@ impl TupleKey {
             proto: Self::mask_u8(packet.proto, tuple.proto_len),
         }
     }
-    
+
     // Create a key from values but masked by the Tuple
-    fn from_values(src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16, proto: u8, tuple: &Tuple) -> Self {
-         Self {
+    fn from_values(
+        src_ip: u32,
+        dst_ip: u32,
+        src_port: u16,
+        dst_port: u16,
+        proto: u8,
+        tuple: &Tuple,
+    ) -> Self {
+        Self {
             src_ip: Self::mask_u32(src_ip, tuple.src_ip_len),
             dst_ip: Self::mask_u32(dst_ip, tuple.dst_ip_len),
             src_port: Self::mask_u16(src_port, tuple.src_port_len),
@@ -80,20 +87,32 @@ impl TupleKey {
     }
 
     fn mask_u32(val: u32, len: u32) -> u32 {
-        if len == 0 { return 0; }
-        if len >= 32 { return val; }
+        if len == 0 {
+            return 0;
+        }
+        if len >= 32 {
+            return val;
+        }
         val & (!0u32 << (32 - len))
     }
 
     fn mask_u16(val: u16, len: u32) -> u16 {
-        if len == 0 { return 0; }
-        if len >= 16 { return val; }
+        if len == 0 {
+            return 0;
+        }
+        if len >= 16 {
+            return val;
+        }
         val & (!0u16 << (16 - len))
     }
 
     fn mask_u8(val: u8, len: u32) -> u8 {
-        if len == 0 { return 0; }
-        if len >= 8 { return val; }
+        if len == 0 {
+            return 0;
+        }
+        if len >= 8 {
+            return val;
+        }
         val & (!0u8 << (8 - len))
     }
 }
@@ -111,8 +130,8 @@ impl TSSClassifier {
     fn expand_rule(rule: &Rule) -> Vec<(Tuple, u32, u32, u16, u16, u8)> {
         let src_prefixes = range_to_prefixes_u32(rule.src_ip.min, rule.src_ip.max, 32);
         let dst_prefixes = range_to_prefixes_u32(rule.dst_ip.min, rule.dst_ip.max, 32);
-        let sp_prefixes  = range_to_prefixes_u16(rule.src_port.min, rule.src_port.max);
-        let dp_prefixes  = range_to_prefixes_u16(rule.dst_port.min, rule.dst_port.max);
+        let sp_prefixes = range_to_prefixes_u16(rule.src_port.min, rule.src_port.max);
+        let dp_prefixes = range_to_prefixes_u16(rule.dst_port.min, rule.dst_port.max);
         let proto_prefixes = range_to_prefixes_u8(rule.proto.min, rule.proto.max);
 
         let mut expanded = Vec::new();
@@ -143,22 +162,21 @@ impl TSSClassifier {
 impl Classifier for TSSClassifier {
     fn build(rules: &[Rule]) -> Self {
         let mut tables: HashMap<Tuple, HashMap<TupleKey, Vec<Rule>>> = HashMap::new();
-        
+
         // Configuration for TupleMerge
         // Max bits difference allowed to merge. Higher = fewer tables, more collisions.
         // A full 5-tuple has 96+ bits effectively.
         // Let's try a conservative limit first to group "very close" ranges.
-        const MAX_MERGE_BITS: u32 = 12; 
+        const MAX_MERGE_BITS: u32 = 12;
 
         for rule in rules {
             let expanded_parts = Self::expand_rule(rule);
-            
+
             for (rule_tuple, sip, dip, sport, dport, proto) in expanded_parts {
-                
                 // TupleMerge Strategy: Find best existing table
                 let mut best_table_tuple: Option<Tuple> = None;
                 let mut min_diff = u32::MAX;
-                
+
                 // collect keys to avoid borrow overlap if needed, or just iterate
                 for existing_tuple in tables.keys() {
                     if existing_tuple.is_subset_of(&rule_tuple) {
@@ -169,17 +187,17 @@ impl Classifier for TSSClassifier {
                         }
                     }
                 }
-                
+
                 // If no good match found, we use the rule's tuple as a new table
                 let target_tuple = best_table_tuple.unwrap_or(rule_tuple);
-                
-                let table = tables.entry(target_tuple).or_insert_with(HashMap::new);
-                
+
+                let table = tables.entry(target_tuple).or_default();
+
                 // Generate key using the TARGET tuple (masking based on table definition)
                 let key = TupleKey::from_values(sip, dip, sport, dport, proto, &target_tuple);
-                
-                let bucket = table.entry(key).or_insert_with(Vec::new);
-                // Insert rule if better priority or just append? 
+
+                let bucket = table.entry(key).or_default();
+                // Insert rule if better priority or just append?
                 // Since we have collisions, we MUST append and scan all.
                 // Optim: keep sorted by priority?
                 bucket.push(rule.clone());
@@ -188,7 +206,10 @@ impl Classifier for TSSClassifier {
             }
         }
 
-        Self { tables, _marker: () }
+        Self {
+            tables,
+            _marker: (),
+        }
     }
 
     fn classify(&self, packet: &FiveTuple) -> Option<Action> {
@@ -201,21 +222,21 @@ impl Classifier for TSSClassifier {
                 for rule in bucket {
                     // Start with high priority check
                     // If we already have a match with priority P, and this rule has priority > P (value < P), we check.
-                    // If rule priority < best_match priority (value > best), we can stop if sorted? 
+                    // If rule priority < best_match priority (value > best), we can stop if sorted?
                     // No, because we iterate tables in arbitrary order. We must scan all tables.
-                    
+
                     // Optimization: If rule.priority >= best_match.priority (value >=), we can skip checking?
                     // Only if we are sure this rule matches. But we aren't.
                     // We need to check exact match first.
-                    
+
                     if let Some(best) = best_match {
-                         if rule.priority >= best.priority {
-                             // This rule is lower or equal priority than what we have. 
-                             // Since bucket is sorted, subsequent rules are also worse.
-                             break; 
-                         }
+                        if rule.priority >= best.priority {
+                            // This rule is lower or equal priority than what we have.
+                            // Since bucket is sorted, subsequent rules are also worse.
+                            break;
+                        }
                     }
-                    
+
                     if rule.matches(packet) {
                         match best_match {
                             None => best_match = Some(rule),
@@ -225,8 +246,8 @@ impl Classifier for TSSClassifier {
                                 }
                             }
                         }
-                         // Since bucket is sorted, and we found a match, any subsequent match in *this* bucket 
-                         // will be lower priority. So we can stop this bucket scan.
+                        // Since bucket is sorted, and we found a match, any subsequent match in *this* bucket
+                        // will be lower priority. So we can stop this bucket scan.
                         break;
                     }
                 }

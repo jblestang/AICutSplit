@@ -1,8 +1,8 @@
-use alloc::vec::Vec;
-use alloc::boxed::Box;
-use crate::rule::{Rule, Range};
 use crate::cutsplit::tree::Dimension;
 use crate::hypersplit::tree::Node;
+use crate::rule::{Range, Rule};
+use alloc::boxed::Box;
+use alloc::vec::Vec;
 
 pub struct Builder {
     pub leaf_threshold: usize,
@@ -11,7 +11,10 @@ pub struct Builder {
 
 impl Builder {
     pub fn new(leaf_threshold: usize, max_depth: usize) -> Self {
-        Self { leaf_threshold, max_depth }
+        Self {
+            leaf_threshold,
+            max_depth,
+        }
     }
 
     pub fn build(&self, rules: &[Rule]) -> Node {
@@ -20,17 +23,21 @@ impl Builder {
 
     fn build_recursive(&self, rules: &[Rule], depth: usize) -> Node {
         if rules.len() <= self.leaf_threshold || depth >= self.max_depth {
-            return Node::Leaf { rules: rules.to_vec() };
+            return Node::Leaf {
+                rules: rules.to_vec(),
+            };
         }
 
         // Find best split
         if let Some((dim, pivot)) = self.find_best_split(rules) {
             let (left_rules, right_rules) = self.split_rules(rules, dim, pivot);
-            
+
             // Optimization: If split doesn't reduce max set size significantly, stop or change strategy.
             // For now, simple recursion.
             if left_rules.len() == rules.len() && right_rules.len() == rules.len() {
-                 return Node::Leaf { rules: rules.to_vec() };
+                return Node::Leaf {
+                    rules: rules.to_vec(),
+                };
             }
 
             Node::Internal {
@@ -40,12 +47,20 @@ impl Builder {
                 right: Box::new(self.build_recursive(&right_rules, depth + 1)),
             }
         } else {
-            Node::Leaf { rules: rules.to_vec() }
+            Node::Leaf {
+                rules: rules.to_vec(),
+            }
         }
     }
 
     fn find_best_split(&self, rules: &[Rule]) -> Option<(Dimension, u32)> {
-        let dimensions = [Dimension::SrcIp, Dimension::DstIp, Dimension::SrcPort, Dimension::DstPort, Dimension::Proto];
+        let dimensions = [
+            Dimension::SrcIp,
+            Dimension::DstIp,
+            Dimension::SrcPort,
+            Dimension::DstPort,
+            Dimension::Proto,
+        ];
         let mut best_score = f32::MAX;
         let mut best_split = None;
 
@@ -59,23 +74,33 @@ impl Builder {
             }
             points.sort_unstable();
             points.dedup();
-            
+
             // Limit candidates for speed (uniform sampling if too many)
-            let step = if points.len() > 16 { points.len() / 16 } else { 1 };
-            
+            let step = if points.len() > 16 {
+                points.len() / 16
+            } else {
+                1
+            };
+
             for i in (0..points.len()).step_by(step) {
                 let pivot = points[i];
-                if pivot == 0 { continue; } // Avoid splitting at 0 if min is 0
+                if pivot == 0 {
+                    continue;
+                } // Avoid splitting at 0 if min is 0
 
                 let (l, r) = self.count_split(rules, dim, pivot);
-                
+
                 // Avoid empty splits
-                if l == 0 || r == 0 { continue; }
-                if l == rules.len() && r == rules.len() { continue; }
+                if l == 0 || r == 0 {
+                    continue;
+                }
+                if l == rules.len() && r == rules.len() {
+                    continue;
+                }
 
                 // Cost: Max(L, R) roughly approximates worst-case search + penalty for sum (duplication)
                 let score = (l.max(r) as f32) + 0.1 * ((l + r) as f32);
-                
+
                 if score < best_score {
                     best_score = score;
                     best_split = Some((dim, pivot));
@@ -90,8 +115,12 @@ impl Builder {
         let mut right = Vec::new();
         for rule in rules {
             let range = self.get_range(rule, dim);
-            if range.min < pivot { left.push(rule.clone()); }
-            if range.max >= pivot { right.push(rule.clone()); }
+            if range.min < pivot {
+                left.push(rule.clone());
+            }
+            if range.max >= pivot {
+                right.push(rule.clone());
+            }
         }
         (left, right)
     }
@@ -101,8 +130,12 @@ impl Builder {
         let mut r = 0;
         for rule in rules {
             let range = self.get_range(rule, dim);
-            if range.min < pivot { l += 1; }
-            if range.max >= pivot { r += 1; }
+            if range.min < pivot {
+                l += 1;
+            }
+            if range.max >= pivot {
+                r += 1;
+            }
         }
         (l, r)
     }

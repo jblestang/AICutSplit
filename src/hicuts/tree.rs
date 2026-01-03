@@ -1,7 +1,7 @@
-use alloc::vec::Vec;
-use alloc::boxed::Box;
+use crate::cutsplit::tree::Dimension;
 use crate::rule::Rule;
-use crate::cutsplit::tree::Dimension; // Reuse Dimension enum
+use alloc::boxed::Box;
+use alloc::vec::Vec; // Reuse Dimension enum
 
 /// A node in the HiCuts decision tree.
 #[derive(Debug, Clone)]

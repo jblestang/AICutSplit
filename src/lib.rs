@@ -3,16 +3,16 @@
 
 extern crate alloc;
 
-pub mod packet;
-pub mod rule;
 pub mod classifier;
-pub mod linear;
 pub mod cutsplit;
 pub mod hicuts;
 pub mod hypersplit;
+pub mod linear;
+pub mod packet;
+pub mod partitionsort;
+pub mod rule;
 pub mod simulation; // Export simulation
 pub mod tss;
-pub mod partitionsort;
 
 // Tests can use std
 #[cfg(test)]

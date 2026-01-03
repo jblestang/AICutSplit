@@ -24,7 +24,7 @@ impl<T: PartialOrd + Copy> Range<T> {
     pub fn new(min: T, max: T) -> Self {
         Self { min, max }
     }
-    
+
     /// Create an exact match range [val, val].
     pub fn exact(val: T) -> Self {
         Self { min: val, max: val }
@@ -64,16 +64,20 @@ pub struct Rule {
 impl Rule {
     /// Check if the rule matches a given 5-tuple
     pub fn matches(&self, tuple: &FiveTuple) -> bool {
-        self.src_ip.contains(tuple.src_ip) &&
-        self.dst_ip.contains(tuple.dst_ip) &&
-        self.src_port.contains(tuple.src_port) &&
-        self.dst_port.contains(tuple.dst_port) &&
-        self.proto.contains(tuple.proto)
+        self.src_ip.contains(tuple.src_ip)
+            && self.dst_ip.contains(tuple.dst_ip)
+            && self.src_port.contains(tuple.src_port)
+            && self.dst_port.contains(tuple.dst_port)
+            && self.proto.contains(tuple.proto)
     }
 }
 
 impl fmt::Display for Rule {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Rule(id={}, pri={}, action={:?})", self.id, self.priority, self.action)
+        write!(
+            f,
+            "Rule(id={}, pri={}, action={:?})",
+            self.id, self.priority, self.action
+        )
     }
 }

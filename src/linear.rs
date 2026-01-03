@@ -1,6 +1,6 @@
 use crate::classifier::Classifier;
 use crate::packet::FiveTuple;
-use crate::rule::{Rule, Action};
+use crate::rule::{Action, Rule};
 use alloc::vec::Vec;
 
 pub struct LinearClassifier {

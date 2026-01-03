@@ -1,7 +1,7 @@
-use alloc::vec::Vec;
-use alloc::boxed::Box;
-use crate::rule::Rule;
 use crate::cutsplit::tree::Dimension;
+use crate::rule::Rule;
+use alloc::boxed::Box;
+use alloc::vec::Vec;
 
 #[derive(Debug, Clone)]
 pub enum Node {

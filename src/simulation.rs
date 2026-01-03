@@ -1,6 +1,6 @@
+use crate::packet::{FiveTuple, PROTO_IGMP, PROTO_TCP, PROTO_UDP};
+use crate::rule::{Action, Range, Rule};
 use alloc::vec::Vec;
-use crate::packet::{FiveTuple, PROTO_TCP, PROTO_UDP, PROTO_IGMP};
-use crate::rule::{Rule, Range, Action};
 use rand::{Rng, SeedableRng};
 use rand_pcg::Pcg32;
 
@@ -23,11 +23,15 @@ impl Simulation {
         // 1. LAN -> WAN (TCP/UDP) - Allow specific services
         // 2. WAN -> LAN (TCP/UDP) - Allow specific servers
         // 3. IGMP Multicast
-        
+
         for i in 0..n_rules {
             let priority = i as u32;
-            let action = if self.rng.gen_bool(0.8) { Action::Permit } else { Action::Deny }; // Mostly allow specific flows, default deny at end
-            
+            let action = if self.rng.gen_bool(0.8) {
+                Action::Permit
+            } else {
+                Action::Deny
+            }; // Mostly allow specific flows, default deny at end
+
             let rule = match self.rng.gen_range(0..10) {
                 0..=5 => self.gen_lan_to_wan_rule(priority, action),
                 6..=8 => self.gen_wan_to_lan_rule(priority, action),
@@ -35,7 +39,7 @@ impl Simulation {
             };
             rules.push(rule);
         }
-        
+
         // Add default deny (though linear classifier handles implicit default, convenient for tree)
         rules.push(Rule {
             id: n_rules as u32,
@@ -58,10 +62,10 @@ impl Simulation {
         let src_ip_suffix = self.rng.gen::<u32>() & ((1 << (32 - src_ip_mask)) - 1);
         let src_start = src_ip_base | src_ip_suffix;
         let src_end = src_start + self.rng.gen_range(0..255); // Small range
-        
+
         // Dst: Random generic
         let dst_ip = self.rng.gen::<u32>();
-        
+
         Rule {
             id,
             priority: id,
@@ -117,15 +121,29 @@ impl Simulation {
         let mut packets = Vec::with_capacity(n_packets);
         for _ in 0..n_packets {
             // Skew towards matching something (LAN or WAN IPs)
-            let src_ip = if self.rng.gen_bool(0.5) { 0xC0A80000 | (self.rng.gen::<u32>() & 0xFFFF) } else { self.rng.gen() };
-            let dst_ip = if self.rng.gen_bool(0.5) { 0xC0A80000 | (self.rng.gen::<u32>() & 0xFFFF) } else { self.rng.gen() };
-            
+            let src_ip = if self.rng.gen_bool(0.5) {
+                0xC0A80000 | (self.rng.gen::<u32>() & 0xFFFF)
+            } else {
+                self.rng.gen()
+            };
+            let dst_ip = if self.rng.gen_bool(0.5) {
+                0xC0A80000 | (self.rng.gen::<u32>() & 0xFFFF)
+            } else {
+                self.rng.gen()
+            };
+
             packets.push(FiveTuple {
                 src_ip,
                 dst_ip,
                 src_port: self.rng.gen(),
                 dst_port: self.rng.gen(),
-                proto: if self.rng.gen_bool(0.1) { PROTO_IGMP } else { if self.rng.gen() { PROTO_TCP } else { PROTO_UDP } },
+                proto: if self.rng.gen_bool(0.1) {
+                    PROTO_IGMP
+                } else if self.rng.gen() {
+                    PROTO_TCP
+                } else {
+                    PROTO_UDP
+                },
             });
         }
         packets

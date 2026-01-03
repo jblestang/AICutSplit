@@ -1,6 +1,6 @@
-use alloc::vec::Vec;
-use alloc::boxed::Box;
 use crate::rule::Rule;
+use alloc::boxed::Box;
+use alloc::vec::Vec;
 
 /// Dimensions to cut on.
 ///
@@ -28,7 +28,7 @@ pub enum Node {
         /// The threshold value for the cut.
         /// Left child handles values < cut_val.
         /// Right child handles values >= cut_val.
-        cut_val: u32, 
+        cut_val: u32,
         /// Left child node.
         left: Box<Node>,
         /// Right child node.
@@ -45,9 +45,6 @@ pub enum Node {
 impl Node {
     /// Returns true if the node is a Leaf.
     pub fn is_leaf(&self) -> bool {
-        match self {
-            Node::Leaf { .. } => true,
-            _ => false,
-        }
+        matches!(self, Node::Leaf { .. })
     }
 }

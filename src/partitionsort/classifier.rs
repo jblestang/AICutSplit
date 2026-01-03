@@ -5,11 +5,11 @@
 //! Yingchareonthawornchai, et al. (IEEE Transactions on Networking 2018)
 //! <https://ieeexplore.ieee.org/document/7774710>
 
-use alloc::vec::Vec;
 use crate::classifier::Classifier;
 use crate::packet::FiveTuple;
-use crate::rule::{Rule, Action};
 use crate::partitionsort::tree::{IntervalTree, Node};
+use crate::rule::{Action, Rule};
+use alloc::vec::Vec;
 
 pub struct PartitionSortClassifier {
     // For now, simpler version: Just multiple IntervalTrees (partitions) searched linearly?
@@ -31,13 +31,21 @@ impl PartitionSortClassifier {
     }
 
     fn get_max_bucket_size(tree: &IntervalTree) -> usize {
-        tree.root.as_ref().map_or(0, |n| Self::max_bucket_recursive(n))
+        tree.root
+            .as_ref()
+            .map_or(0, |n| Self::max_bucket_recursive(n))
     }
 
     fn max_bucket_recursive(node: &Node) -> usize {
         let my_size = node.rules.len();
-        let left_max = node.left.as_ref().map_or(0, |n| Self::max_bucket_recursive(n));
-        let right_max = node.right.as_ref().map_or(0, |n| Self::max_bucket_recursive(n));
+        let left_max = node
+            .left
+            .as_ref()
+            .map_or(0, |n| Self::max_bucket_recursive(n));
+        let right_max = node
+            .right
+            .as_ref()
+            .map_or(0, |n| Self::max_bucket_recursive(n));
         my_size.max(left_max).max(right_max)
     }
 }
@@ -54,14 +62,14 @@ impl Classifier for PartitionSortClassifier {
         // 3. (Partitioning Step - TODO for V2): Extract "bad" rules and put in next partition.
         // For V1, we just pick the Single Best Dimension.
         // This effectively makes it a "1D Layout Optimized" classifier.
-        
+
         // Check 5 dims
         let mut best_dim = 0;
         let mut min_max_bucket = usize::MAX;
 
         for dim in 0..5 {
             let score = Self::evaluate_dimension(rules, dim);
-             // Prefer Src/Dst IP (0,1) over Ports (2,3) if scores tie, generally more entropy
+            // Prefer Src/Dst IP (0,1) over Ports (2,3) if scores tie, generally more entropy
             if score < min_max_bucket {
                 min_max_bucket = score;
                 best_dim = dim;
@@ -69,8 +77,10 @@ impl Classifier for PartitionSortClassifier {
         }
 
         let best_tree = IntervalTree::build(rules.to_vec(), best_dim);
-        
-        Self { trees: alloc::vec![best_tree] }
+
+        Self {
+            trees: alloc::vec![best_tree],
+        }
     }
 
     fn classify(&self, packet: &FiveTuple) -> Option<Action> {

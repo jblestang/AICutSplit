@@ -1,5 +1,3 @@
-
-
 /// 5-tuple representation for classification.
 ///
 /// This structure holds the key fields used for packet classification:
@@ -46,7 +44,7 @@ pub struct Ipv4Header {
 }
 
 /// TCP Header
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct TcpHeader {
     pub src_port: u16,
     pub dst_port: u16,
@@ -58,7 +56,7 @@ pub struct TcpHeader {
 /// UDP Header.
 ///
 /// User Datagram Protocol header. Simple and stateless.
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct UdpHeader {
     /// Source Port
     pub src_port: u16,
@@ -72,7 +70,7 @@ pub struct UdpHeader {
 ///
 /// Internet Group Management Protocol, used for multicast correctness.
 /// This implementation simulates basic IGMP fields.
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct IgmpHeader {
     /// IGMP Type (Query, Report, Leave)
     pub igmp_type: u8,
@@ -97,18 +95,13 @@ pub struct Packet {
     pub l4: L4Header,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum L4Header {
     Tcp(TcpHeader),
     Udp(UdpHeader),
     Igmp(IgmpHeader),
+    #[default]
     Unknown,
-}
-
-impl Default for L4Header {
-    fn default() -> Self {
-        L4Header::Unknown
-    }
 }
 
 impl Packet {
@@ -119,7 +112,7 @@ impl Packet {
             L4Header::Udp(h) => (h.src_port, h.dst_port),
             _ => (0, 0),
         };
-        
+
         FiveTuple {
             src_ip: self.ip.src,
             dst_ip: self.ip.dst,

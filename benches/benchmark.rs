@@ -1,34 +1,32 @@
-use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
-use cutsplit::simulation::Simulation;
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use cutsplit::classifier::Classifier;
-use cutsplit::linear::LinearClassifier;
 use cutsplit::cutsplit::classifier::CutSplitClassifier;
 use cutsplit::hicuts::classifier::HiCutsClassifier;
 use cutsplit::hypersplit::classifier::HyperSplitClassifier;
-use cutsplit::tss::classifier::TSSClassifier;
+use cutsplit::linear::LinearClassifier;
 use cutsplit::partitionsort::classifier::PartitionSortClassifier;
+use cutsplit::simulation::Simulation;
+use cutsplit::tss::classifier::TSSClassifier;
 // cutsplit::cutsplit::classifier::CutSplitClassifier is ... lib->cutsplit->classifier->CSClassifier.
 // But lib.rs has `pub mod cutsplit`. And `cutsplit/mod.rs` has `pub mod classifier`.
 // So usage is `cutsplit::cutsplit::classifier::CutSplitClassifier`.
 
 fn benchmark_classification(c: &mut Criterion) {
     let mut sim = Simulation::new(42); // Deterministic seed
-    
+
     // Benchmark steps requested by user
     let rule_counts = vec![
-        100, 300, 500, 700, 900, 1000, 
-        3000, 5000, 7000, 9000, 10000, 
-        20000
+        100, 300, 500, 700, 900, 1000, 3000, 5000, 7000, 9000, 10000, 20000,
     ];
-    
+
     let mut group = c.benchmark_group("Classification");
     // Set a lower sample size/time to accommodate many steps if needed
-    group.sample_size(50); 
-    
+    group.sample_size(50);
+
     for &n_rules in &rule_counts {
         let rules = sim.generate_rules(n_rules);
         let packets = sim.generate_packets(1000); // 1000 packets for throughput test
-        
+
         // Build Classifiers
         let linear = LinearClassifier::build(&rules);
         let cutsplit = CutSplitClassifier::build(&rules);
@@ -36,7 +34,7 @@ fn benchmark_classification(c: &mut Criterion) {
         let hypersplit = HyperSplitClassifier::build(&rules);
         let tss = TSSClassifier::build(&rules);
         let ps = PartitionSortClassifier::build(&rules);
-        
+
         group.bench_function(format!("Linear/{}", n_rules), |b| {
             b.iter(|| {
                 for p in &packets {
@@ -44,7 +42,7 @@ fn benchmark_classification(c: &mut Criterion) {
                 }
             })
         });
-        
+
         group.bench_function(format!("CutSplit/{}", n_rules), |b| {
             b.iter(|| {
                 for p in &packets {

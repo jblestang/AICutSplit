@@ -1,7 +1,7 @@
-use alloc::vec::Vec;
+use crate::cutsplit::tree::{Dimension, Node};
+use crate::rule::{Range, Rule};
 use alloc::boxed::Box;
-use crate::rule::{Rule, Range};
-use crate::cutsplit::tree::{Node, Dimension};
+use alloc::vec::Vec;
 
 /// Builder for the CutSplit decision tree.
 ///
@@ -17,7 +17,10 @@ pub struct Builder {
 impl Builder {
     /// Create a new builder with specified thresholds.
     pub fn new(leaf_threshold: usize, max_depth: usize) -> Self {
-        Self { leaf_threshold, max_depth }
+        Self {
+            leaf_threshold,
+            max_depth,
+        }
     }
 
     /// Build a decision tree from a set of rules.
@@ -29,20 +32,22 @@ impl Builder {
     fn build_recursive(&self, rules: &[Rule], depth: usize) -> Node {
         // Base case: Few enough rules or max depth reached
         if rules.len() <= self.leaf_threshold || depth >= self.max_depth {
-            return Node::Leaf { rules: rules.to_vec() };
+            return Node::Leaf {
+                rules: rules.to_vec(),
+            };
         }
 
         // Try to find a good cut
         if let Some((dim, val)) = self.find_best_cut(rules) {
             let (left_rules, right_rules) = self.partition_rules(rules, dim, val);
-            
+
             // Heuristic to stop if split is ineffective (e.g., all rules go to one side)
             // But strict duplication might cause both sides to have many rules if they all overlap.
             // If both children satisfy base condition check? No, we recurse.
-            
+
             // If we didn't reduce the rule set size in at least one branch effectively, or if we are just duplicating everything:
             // For now, accept the cut if it exists.
-            
+
             Node::Internal {
                 dimension: dim,
                 cut_val: val,
@@ -51,15 +56,22 @@ impl Builder {
             }
         } else {
             // No good cut found
-            Node::Leaf { rules: rules.to_vec() }
+            Node::Leaf {
+                rules: rules.to_vec(),
+            }
         }
     }
 
     fn find_best_cut(&self, rules: &[Rule]) -> Option<(Dimension, u32)> {
         // Simple heuristic: Try to cut on IP/Port dimensions.
         // We look for a median point of start/end points of ranges in these dimensions.
-        
-        let dimensions = [Dimension::SrcIp, Dimension::DstIp, Dimension::SrcPort, Dimension::DstPort];
+
+        let dimensions = [
+            Dimension::SrcIp,
+            Dimension::DstIp,
+            Dimension::SrcPort,
+            Dimension::DstPort,
+        ];
         let mut best_score = -1.0;
         let mut best_cut = None;
 
@@ -78,24 +90,28 @@ impl Builder {
             // For speed, just check median or a few sample points.
             let mid_idx = points.len() / 2;
             if mid_idx > 0 && mid_idx < points.len() {
-               let val = points[mid_idx];
-               // Calculate score: Balance + Duplication penalty
-               // Score = 1 - abs(left_count - right_count)/total - duplication_factor
-               let (l, r) = self.count_split(rules, dim, val);
-               
-               // Avoid useless cuts
-               if l == rules.len() && r == rules.len() { continue; }
-               if l == 0 || r == 0 { continue; } // Pure split not useful if it doesn't separate? Wait, if l=0, all in right.
+                let val = points[mid_idx];
+                // Calculate score: Balance + Duplication penalty
+                // Score = 1 - abs(left_count - right_count)/total - duplication_factor
+                let (l, r) = self.count_split(rules, dim, val);
 
-               let duplication = (l + r) as f32 / rules.len() as f32;
-               // We want minimizing duplication (closer to 1.0) and creating balance.
-               // Let's use negative duplication as score component.
-               let score = 1.0 / duplication; 
+                // Avoid useless cuts
+                if l == rules.len() && r == rules.len() {
+                    continue;
+                }
+                if l == 0 || r == 0 {
+                    continue;
+                } // Pure split not useful if it doesn't separate? Wait, if l=0, all in right.
 
-               if score > best_score {
-                   best_score = score;
-                   best_cut = Some((dim, val));
-               }
+                let duplication = (l + r) as f32 / rules.len() as f32;
+                // We want minimizing duplication (closer to 1.0) and creating balance.
+                // Let's use negative duplication as score component.
+                let score = 1.0 / duplication;
+
+                if score > best_score {
+                    best_score = score;
+                    best_cut = Some((dim, val));
+                }
             }
         }
 
@@ -108,13 +124,13 @@ impl Builder {
 
         for rule in rules {
             let range = self.get_range(rule, dim);
-            
+
             // Left child: < val
             // Range overlaps left if min < val
             if range.min < val {
                 left.push(rule.clone());
             }
-            
+
             // Right child: >= val
             // Range overlaps right if max >= val
             if range.max >= val {
@@ -129,8 +145,12 @@ impl Builder {
         let mut r = 0;
         for rule in rules {
             let range = self.get_range(rule, dim);
-            if range.min < val { l += 1; }
-            if range.max >= val { r += 1; }
+            if range.min < val {
+                l += 1;
+            }
+            if range.max >= val {
+                r += 1;
+            }
         }
         (l, r)
     }

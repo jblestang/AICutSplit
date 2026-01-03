@@ -6,10 +6,10 @@
 //! <https://ieeexplore.ieee.org/document/8464035>
 
 use crate::classifier::Classifier;
-use crate::packet::FiveTuple;
-use crate::rule::{Rule, Action};
-use crate::cutsplit::tree::{Node, Dimension};
 use crate::cutsplit::builder::Builder;
+use crate::cutsplit::tree::{Dimension, Node};
+use crate::packet::FiveTuple;
+use crate::rule::{Action, Rule};
 
 /// CutSplit Packet Classifier.
 ///
@@ -27,7 +27,7 @@ impl Classifier for CutSplitClassifier {
         // CutSplit builder params
         // Threshold: typically 8-16 rules for linear scan in leaf
         // Depth: prevent stack overflow
-        let builder = Builder::new(10, 20); 
+        let builder = Builder::new(10, 20);
         let root = builder.build(rules);
         Self { root }
     }
@@ -38,8 +38,13 @@ impl Classifier for CutSplitClassifier {
 
         loop {
             match current {
-                Node::Internal { dimension, cut_val, left, right } => {
-                     let val = match dimension {
+                Node::Internal {
+                    dimension,
+                    cut_val,
+                    left,
+                    right,
+                } => {
+                    let val = match dimension {
                         Dimension::SrcIp => packet.src_ip,
                         Dimension::DstIp => packet.dst_ip,
                         Dimension::SrcPort => packet.src_port as u32,
@@ -52,7 +57,7 @@ impl Classifier for CutSplitClassifier {
                     } else {
                         current = right;
                     }
-                },
+                }
                 Node::Leaf { rules } => {
                     // Linear search in leaf
                     for rule in rules {

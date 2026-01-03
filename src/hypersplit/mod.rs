@@ -1,3 +1,3 @@
-pub mod tree;
 pub mod builder;
 pub mod classifier;
+pub mod tree;
