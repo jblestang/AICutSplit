@@ -10,6 +10,9 @@ This project implements three high-performance packet classification algorithms:
 | **CutSplit** | Decision Tree | Geometric cuts followed by rule separation. Balanced structure. |
 | **HiCuts** | Decision Tree | Multi-way geometric cuts. Very fast for small/medium rule sets. |
 | **HyperSplit**| Decision Tree | Binary space partitioning. Scales best for large rule sets (>10k). |
+| **TSS** | Hash-based | Tuple Space Search. Hash-based exact match. |
+| **TupleMerge** | Hash-based | Optimized TSS reducing table collisions. |
+| **PartitionSort**| Geometric | Geometric algorithm using Interval Trees / Sorting. |
 
 ## Performance Benchmarks
 
