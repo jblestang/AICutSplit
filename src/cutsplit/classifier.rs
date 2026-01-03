@@ -1,3 +1,10 @@
+//! CutSplit Classifier Implementation
+//!
+//! Based on the paper:
+//! "CutSplit: A Decision-Tree Combining Cutting and Splitting for Scalable Packet Classification"
+//! Wenjun Li, et al. (IEEE INFOCOM 2018)
+//! <https://ieeexplore.ieee.org/document/8464035>
+
 use crate::classifier::Classifier;
 use crate::packet::FiveTuple;
 use crate::rule::{Rule, Action};

@@ -39,6 +39,8 @@ Benchmarks were run on synthetic LAN-WAN traffic rules up to 20,000 rules.
 | HiCuts    | ~227x   |
 | CutSplit  | ~140x   |
 
+For a detailed overview of these algorithms and the research behind them, see [STATE_OF_THE_ART.md](STATE_OF_THE_ART.md).
+
 ## Usage Example
 
 ```rust

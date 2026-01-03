@@ -1,3 +1,10 @@
+//! HiCuts Classifier Implementation
+//!
+//! Based on the paper:
+//! "Packet Classification using Hierarchical Intelligent Cuttings"
+//! Pankaj Gupta and Nick McKeown (2000)
+//! <http://yuba.stanford.edu/~nickm/papers/sigcomm2000.pdf>
+
 use crate::classifier::Classifier;
 use crate::packet::FiveTuple;
 use crate::rule::{Rule, Action};

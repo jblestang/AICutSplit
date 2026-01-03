@@ -1,3 +1,10 @@
+//! HyperSplit Classifier Implementation
+//!
+//! Based on the paper:
+//! "Packet Classification Algorithms: From Theory to Practice"
+//! Yaxuan Qi, et al. (IEEE INFOCOM 2009)
+//! <https://ieeexplore.ieee.org/document/5061887>
+
 use crate::classifier::Classifier;
 use crate::packet::FiveTuple;
 use crate::rule::{Rule, Action};

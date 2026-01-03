@@ -6,6 +6,7 @@ use cutsplit::cutsplit::classifier::CutSplitClassifier;
 use cutsplit::hicuts::classifier::HiCutsClassifier;
 use cutsplit::hypersplit::classifier::HyperSplitClassifier;
 use cutsplit::tss::classifier::TSSClassifier;
+use cutsplit::partitionsort::classifier::PartitionSortClassifier;
 // cutsplit::cutsplit::classifier::CutSplitClassifier is ... lib->cutsplit->classifier->CSClassifier.
 // But lib.rs has `pub mod cutsplit`. And `cutsplit/mod.rs` has `pub mod classifier`.
 // So usage is `cutsplit::cutsplit::classifier::CutSplitClassifier`.
@@ -34,6 +35,7 @@ fn benchmark_classification(c: &mut Criterion) {
         let hicuts = HiCutsClassifier::build(&rules);
         let hypersplit = HyperSplitClassifier::build(&rules);
         let tss = TSSClassifier::build(&rules);
+        let ps = PartitionSortClassifier::build(&rules);
         
         group.bench_function(format!("Linear/{}", n_rules), |b| {
             b.iter(|| {
@@ -71,6 +73,14 @@ fn benchmark_classification(c: &mut Criterion) {
             b.iter(|| {
                 for p in &packets {
                     tss.classify(p);
+                }
+            })
+        });
+
+        group.bench_function(format!("PartitionSort/{}", n_rules), |b| {
+            b.iter(|| {
+                for p in &packets {
+                    ps.classify(p);
                 }
             })
         });
