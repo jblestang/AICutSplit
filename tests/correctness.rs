@@ -4,6 +4,7 @@ use cutsplit::linear::LinearClassifier;
 use cutsplit::cutsplit::classifier::CutSplitClassifier;
 use cutsplit::hicuts::classifier::HiCutsClassifier;
 use cutsplit::hypersplit::classifier::HyperSplitClassifier;
+use cutsplit::tss::classifier::TSSClassifier;
 
 #[test]
 fn test_all_classifiers_correctness() {
@@ -17,16 +18,19 @@ fn test_all_classifiers_correctness() {
     let cutsplit = CutSplitClassifier::build(&rules);
     let hicuts = HiCutsClassifier::build(&rules);
     let hypersplit = HyperSplitClassifier::build(&rules);
+    let tss = TSSClassifier::build(&rules);
     
     for (i, packet) in packets.iter().enumerate() {
         let res_linear = linear.classify(packet);
         let res_cutsplit = cutsplit.classify(packet);
         let res_hicuts = hicuts.classify(packet);
         let res_hypersplit = hypersplit.classify(packet);
+        let res_tss = tss.classify(packet);
         
         assert_eq!(res_linear, res_cutsplit, "CutSplit mismatch at packet {} {:?}. Linear: {:?}, CutSplit: {:?}", i, packet, res_linear, res_cutsplit);
         assert_eq!(res_linear, res_hicuts, "HiCuts mismatch at packet {} {:?}. Linear: {:?}, HiCuts: {:?}", i, packet, res_linear, res_hicuts);
         assert_eq!(res_linear, res_hypersplit, "HyperSplit mismatch at packet {} {:?}. Linear: {:?}, HyperSplit: {:?}", i, packet, res_linear, res_hypersplit);
+        assert_eq!(res_linear, res_tss, "TSS mismatch at packet {} {:?}. Linear: {:?}, TSS: {:?}", i, packet, res_linear, res_tss);
     }
 }
 
@@ -40,15 +44,18 @@ fn test_large_rule_set_correctness() {
     let cutsplit = CutSplitClassifier::build(&rules);
     let hicuts = HiCutsClassifier::build(&rules);
     let hypersplit = HyperSplitClassifier::build(&rules);
+    let tss = TSSClassifier::build(&rules);
     
     for (i, packet) in packets.iter().enumerate() {
         let res_linear = linear.classify(packet);
         let res_cutsplit = cutsplit.classify(packet);
         let res_hicuts = hicuts.classify(packet);
         let res_hypersplit = hypersplit.classify(packet);
+        let res_tss = tss.classify(packet);
         
         assert_eq!(res_linear, res_cutsplit, "CutSplit mismatch at packet {} {:?}. Linear: {:?}, CutSplit: {:?}", i, packet, res_linear, res_cutsplit);
         assert_eq!(res_linear, res_hicuts, "HiCuts mismatch at packet {} {:?}. Linear: {:?}, HiCuts: {:?}", i, packet, res_linear, res_hicuts);
         assert_eq!(res_linear, res_hypersplit, "HyperSplit mismatch at packet {} {:?}. Linear: {:?}, HyperSplit: {:?}", i, packet, res_linear, res_hypersplit);
+        assert_eq!(res_linear, res_tss, "TSS mismatch at packet {} {:?}. Linear: {:?}, TSS: {:?}", i, packet, res_linear, res_tss);
     }
 }

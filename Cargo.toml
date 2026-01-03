@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+hashbrown = "0.16.1"
 rand = { version = "0.8", default-features = false, features = ["alloc"] } # no_std compatible if we use seedable rng
 rand_pcg = "0.3"
 

@@ -4,7 +4,8 @@ use cutsplit::classifier::Classifier;
 use cutsplit::linear::LinearClassifier;
 use cutsplit::cutsplit::classifier::CutSplitClassifier;
 use cutsplit::hicuts::classifier::HiCutsClassifier;
-use cutsplit::hypersplit::classifier::HyperSplitClassifier; // Path might need partial adjustment via lib.rs export?
+use cutsplit::hypersplit::classifier::HyperSplitClassifier;
+use cutsplit::tss::classifier::TSSClassifier;
 // cutsplit::cutsplit::classifier::CutSplitClassifier is ... lib->cutsplit->classifier->CSClassifier.
 // But lib.rs has `pub mod cutsplit`. And `cutsplit/mod.rs` has `pub mod classifier`.
 // So usage is `cutsplit::cutsplit::classifier::CutSplitClassifier`.
@@ -29,38 +30,47 @@ fn benchmark_classification(c: &mut Criterion) {
         
         // Build Classifiers
         let linear = LinearClassifier::build(&rules);
-        let tree = CutSplitClassifier::build(&rules);
+        let cutsplit = CutSplitClassifier::build(&rules);
         let hicuts = HiCutsClassifier::build(&rules);
         let hypersplit = HyperSplitClassifier::build(&rules);
+        let tss = TSSClassifier::build(&rules);
         
-        group.bench_with_input(BenchmarkId::new("Linear", n_rules), &packets, |b, pkts| {
+        group.bench_function(format!("Linear/{}", n_rules), |b| {
             b.iter(|| {
-                for pkt in pkts {
-                    linear.classify(pkt);
+                for p in &packets {
+                    linear.classify(p);
                 }
             })
         });
         
-        group.bench_with_input(BenchmarkId::new("CutSplit", n_rules), &packets, |b, pkts| {
+        group.bench_function(format!("CutSplit/{}", n_rules), |b| {
             b.iter(|| {
-                for pkt in pkts {
-                    tree.classify(pkt);
+                for p in &packets {
+                    cutsplit.classify(p);
                 }
             })
         });
 
-        group.bench_with_input(BenchmarkId::new("HiCuts", n_rules), &packets, |b, pkts| {
+        group.bench_function(format!("HiCuts/{}", n_rules), |b| {
             b.iter(|| {
-                for pkt in pkts {
-                    hicuts.classify(pkt);
+                for p in &packets {
+                    hicuts.classify(p);
                 }
             })
         });
 
-        group.bench_with_input(BenchmarkId::new("HyperSplit", n_rules), &packets, |b, pkts| {
+        group.bench_function(format!("HyperSplit/{}", n_rules), |b| {
             b.iter(|| {
-                for pkt in pkts {
-                    hypersplit.classify(pkt);
+                for p in &packets {
+                    hypersplit.classify(p);
+                }
+            })
+        });
+
+        group.bench_function(format!("TSS/{}", n_rules), |b| {
+            b.iter(|| {
+                for p in &packets {
+                    tss.classify(p);
                 }
             })
         });

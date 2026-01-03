@@ -11,6 +11,7 @@ pub mod cutsplit;
 pub mod hicuts;
 pub mod hypersplit;
 pub mod simulation; // Export simulation
+pub mod tss;
 
 // Tests can use std
 #[cfg(test)]
